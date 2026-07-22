@@ -1,0 +1,1342 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מצפן השינוי | ערכת הובלת שינוי בעידן ה-AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700;800;900&family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Blanchard brand tokens, sampled from official assets */
+    --navy:#001737;
+    --navy-soft:#0B2B52;
+    --deep: var(--navy);
+    --paper:#F7F9FB;
+    --paper-alt:#EEF2F6;
+    --card:#FFFFFF;
+    --card-solid:#FFFFFF;
+    --ink:#001737;
+    --ink-soft:#4C5C70;
+    --ink-faint:#8B99A8;
+    --line:#E1E7ED;
+
+    /* primary interactive accent (brand blue) */
+    --brass:#00778F;
+    --brass-deep:#00627A;
+    --brass-soft: rgba(0,119,143,0.10);
+
+    /* score bands: teal=good(green), amber=medium(blue), rust=needs attention(orange) */
+    --teal:#0F9B57;
+    --teal-soft: rgba(15,155,87,0.12);
+    --amber:#00778F;
+    --amber-soft: rgba(0,119,143,0.10);
+    --rust:#E8690A;
+    --rust-soft: rgba(232,105,10,0.12);
+
+    --shadow: 0 20px 45px -24px rgba(0,23,55,0.22);
+    --grad-1:#00778F;
+    --grad-2:#39AEA6;
+    --grad-3:#0F9B57;
+    --grad-4:#E8690A;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:
+      radial-gradient(circle at 6% -4%, rgba(0,119,143,0.10), transparent 34%),
+      radial-gradient(circle at 100% 10%, rgba(15,155,87,0.09), transparent 36%),
+      radial-gradient(circle at 20% 100%, rgba(232,105,10,0.07), transparent 40%),
+      var(--paper);
+    background-attachment:fixed;
+    color:var(--ink);
+    font-family:'Heebo', sans-serif;
+    line-height:1.6;
+    min-height:100vh;
+  }
+  h1,h2,h3,h4{ font-family:'Rubik', sans-serif; font-weight:700; color:var(--ink); letter-spacing:-0.01em; }
+  strong, b{ color:var(--ink); font-weight:700; }
+  ::selection{ background:var(--brass-soft); }
+  a{ color:inherit; }
+  button{ font-family:inherit; cursor:pointer; }
+
+  /* ---------- Layout ---------- */
+  .app{ display:flex; min-height:100vh; }
+  .sidebar{
+    width:322px; flex:0 0 322px;
+    background:
+      radial-gradient(circle at 15% 0%, rgba(57,174,166,0.20), transparent 55%),
+      var(--navy);
+    color:#EAF1F6;
+    padding:30px 24px;
+    position:sticky; top:0; height:100vh; overflow-y:auto; overflow-x:hidden;
+  }
+  .brand{ margin-bottom:8px; }
+  .logo-wordmark{
+    display:flex; align-items:center; justify-content:flex-start; width:100%;
+    margin-bottom:24px;
+    padding-bottom:20px; border-bottom:1px solid rgba(255,255,255,0.14);
+  }
+  .logo-wordmark img{ height:20px; width:auto; max-width:180px; display:block; object-fit:contain; filter:brightness(0) invert(1); }
+  .logo-sub{ font-size:0.62rem; letter-spacing:0.22em; color:#8FA3B8; margin-top:6px; font-weight:600; }
+
+  .brand .mark{
+    width:48px;height:48px;border-radius:50%;
+    background:conic-gradient(from -40deg, var(--grad-1), var(--grad-2), var(--grad-3), var(--grad-4), var(--grad-1));
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:16px;
+  }
+  .brand .mark::after{
+    content:"";width:28px;height:28px;border-radius:50%;
+    background:var(--navy);
+  }
+  .brand h1{ color:#fff; font-size:1.3rem; line-height:1.3; font-weight:700; }
+  .brand p{ color:#FFB463; font-size:0.92rem; font-weight:600; margin-top:8px; letter-spacing:.01em;}
+
+  nav.steps{ display:flex; flex-direction:column; gap:3px; margin-top:22px; }
+  nav.steps button{
+    all:unset; cursor:pointer;
+    display:flex; align-items:center; gap:10px;
+    padding:11px 12px; border-radius:10px;
+    color:#DCE5EF; font-size:0.98rem; font-weight:500;
+    transition:background .15s ease, color .15s ease;
+  }
+  nav.steps button .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:#294662; flex:0 0 auto;
+    transition:background .15s ease, transform .15s ease;
+  }
+  nav.steps button:hover{ background:rgba(255,255,255,0.07); color:#fff; }
+  nav.steps button.active{
+    background:rgba(57,174,166,0.20);
+    color:#fff; font-weight:700;
+  }
+  nav.steps button.active .dot{ background:var(--grad-2); transform:scale(1.3); }
+  nav.steps button.about-item{ margin-top:14px; padding-top:17px; border-top:1px solid rgba(255,255,255,0.14); }
+  nav.steps button.about-item .dot{ background:var(--grad-4); }
+  nav.steps button.about-item.active{ background:rgba(232,105,10,0.20); }
+  nav.steps button.about-item.active .dot{ background:var(--grad-4); box-shadow:0 0 8px 1px rgba(232,105,10,0.6); }
+  nav.steps button .lbl{ flex:1; text-align:right; }
+  nav.steps button .prog{ font-size:0.68rem; color:#8296AC; font-family:'Heebo'; }
+
+  .sidebar .footer-note{
+    margin-top:28px; padding-top:18px; border-top:1px solid rgba(255,255,255,0.18);
+    font-size:0.8rem; color:#B0BFCF; line-height:1.75;
+  }
+  .sidebar .footer-note b, .sidebar .footer-note strong{ color:#D9E3ED; }
+
+  main{ flex:1; min-width:0; }
+  .screen{ display:none; animation:fadeIn .35s ease; }
+  .screen.active{ display:block; }
+  @keyframes fadeIn{ from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+
+  .wrap{ max-width:880px; margin:0 auto; padding:56px 40px 90px; }
+
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:0.86rem; letter-spacing:.08em; color:var(--brass-deep);
+    font-weight:700; margin-bottom:14px; text-transform:uppercase;
+  }
+  .eyebrow::before{ content:""; width:22px; height:2px; border-radius:2px; background:linear-gradient(90deg, var(--grad-1), var(--grad-2)); }
+
+  h2.title{ font-size:2.25rem; margin-bottom:10px; }
+  .subtitle{ color:var(--ink-soft); font-size:1.05rem; max-width:640px; margin-bottom:30px;}
+
+  .card{
+    position:relative;
+    background:var(--card); border:1px solid var(--line); border-radius:20px;
+    padding:26px 28px; box-shadow:var(--shadow);
+    overflow:hidden;
+  }
+  .card::before{
+    content:""; position:absolute; inset-inline-start:0; top:0; height:4px; width:100%;
+    background:linear-gradient(90deg, var(--grad-1), var(--grad-2), var(--grad-3), var(--grad-4));
+    opacity:0.9;
+  }
+  .stack{ display:flex; flex-direction:column; gap:18px; }
+
+  /* ---------- Compass gauge (signature element) ---------- */
+  .compass{
+    position:relative; width:150px; height:150px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; flex:0 0 auto;
+  }
+  .compass .orbit{
+    position:absolute; inset:-9px; border-radius:50%;
+    border:1.5px dashed var(--line);
+    animation: spin 20s linear infinite;
+  }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+  .compass .ring{
+    position:absolute; inset:0; border-radius:50%;
+    background: conic-gradient(from -90deg, var(--gauge-color, var(--brass)) calc(var(--pct,0)*1%), var(--paper-alt) 0);
+    transition: background 0.6s ease;
+  }
+  .compass .ring::after{
+    content:""; position:absolute; inset:12px; border-radius:50%;
+    background:var(--card-solid); border:1px solid var(--line); box-shadow:0 4px 14px -6px rgba(0,23,55,0.18);
+  }
+  .compass .needle-core{
+    position:relative; text-align:center; z-index:2;
+  }
+  .compass .needle-core b{ display:block; font-family:'Rubik'; font-weight:800; font-size:1.6rem; }
+  .compass .needle-core span{ display:block; font-size:0.66rem; color:var(--ink-soft); margin-top:2px; }
+  .compass.small{ width:80px; height:80px; }
+  .compass.small .orbit{ inset:-6px; }
+  .compass.small .ring::after{ inset:7px; }
+  .compass.small .needle-core b{ font-size:1.05rem; }
+  .compass.small .needle-core span{ font-size:0.56rem; }
+
+  /* ---------- Hero (intro) ---------- */
+  .hero{
+    display:flex; align-items:center; gap:40px; margin-bottom:38px;
+    background:
+      radial-gradient(circle at 88% 8%, rgba(57,174,166,0.55), transparent 45%),
+      radial-gradient(circle at 8% 105%, rgba(232,105,10,0.35), transparent 45%),
+      linear-gradient(135deg, var(--navy) 0%, #072B4F 100%);
+    color:#fff; border-radius:26px; padding:42px 44px; position:relative; overflow:hidden;
+  }
+  .hero::before{
+    content:""; position:absolute; inset:0;
+    background-image: radial-gradient(circle at 80% 30%, rgba(0,119,143,0.45), transparent 55%);
+  }
+  .hero-text{ position:relative; z-index:1; flex:1; }
+  .hero-text .eyebrow{ color:#7FE0D6; font-size:0.95rem; }
+  .hero-text .eyebrow::before{ background:linear-gradient(90deg, var(--grad-2), var(--grad-3)); }
+  .hero-text h1{ color:#fff; font-size:2.4rem; line-height:1.25; margin-bottom:14px; }
+  .hero-text h1 .grad-word{
+    background:linear-gradient(90deg, var(--grad-2), var(--grad-4));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .hero-text p{ color:#C4D3E0; max-width:520px; font-size:1rem; }
+  .hero-compass{ position:relative; z-index:1; flex:0 0 auto; }
+  .hero-compass .ring::after{ background:#0D2E52; border-color:rgba(255,255,255,0.18); }
+  .hero-compass .orbit{ border-color:rgba(255,255,255,0.28); }
+  .hero-compass .needle-core b, .hero-compass .needle-core span{ color:#fff; }
+
+  .quote-block{
+    border-right:3px solid transparent;
+    border-image: linear-gradient(180deg, var(--grad-1), var(--grad-3)) 1;
+    padding:6px 20px 6px 4px;
+    font-family:'Rubik'; font-weight:600; font-size:1.15rem; color:var(--ink); margin:26px 0;
+  }
+  .quote-block cite{ display:block; font-family:'Heebo'; font-weight:400; font-style:normal; font-size:0.82rem; color:var(--ink-soft); margin-top:8px;}
+
+  .grid-4{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; margin:30px 0; }
+  .mini-card{ position:relative; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:18px 20px; overflow:hidden; box-shadow:var(--shadow); }
+  .mini-card::before{ content:""; position:absolute; inset-inline-start:0; top:0; height:4px; width:100%; background:linear-gradient(90deg, var(--grad-1), var(--grad-2), var(--grad-3), var(--grad-4)); opacity:0.9; }
+  .mini-card .num{ font-family:'Rubik'; color:var(--brass-deep); font-size:0.85rem; font-weight:800; margin-bottom:6px; }
+  .mini-card h4{ font-size:1rem; margin-bottom:6px; }
+  .mini-card p{ font-size:0.86rem; color:var(--ink-soft); }
+
+  .roadmap-strip{
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    background:var(--card); border:1px solid var(--line); border-radius:18px;
+    padding:22px 24px; margin-bottom:34px; box-shadow:var(--shadow);
+  }
+  .rm-step{ display:flex; align-items:flex-start; gap:12px; flex:1; min-width:180px; }
+  .rm-num{
+    flex:0 0 auto; width:30px; height:30px; border-radius:50%;
+    background:var(--brass-soft); color:var(--brass-deep);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Rubik'; font-weight:800; font-size:0.9rem;
+  }
+  .rm-step b{ display:block; font-size:0.9rem; margin-bottom:3px; }
+  .rm-step span{ display:block; font-size:0.78rem; color:var(--ink-soft); line-height:1.5; }
+  .rm-arrow{ color:var(--ink-faint); font-size:1.1rem; flex:0 0 auto; }
+  @media (max-width:880px){ .rm-arrow{ display:none; } .roadmap-strip{ flex-direction:column; align-items:stretch; } }
+
+  .btn{
+    display:inline-flex; align-items:center; gap:8px;
+    background:linear-gradient(90deg, var(--grad-1), var(--grad-2));
+    color:#fff; border:none; border-radius:999px;
+    padding:12px 24px; font-weight:700; font-size:0.92rem;
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .btn:hover{ transform:translateY(-1px); box-shadow:0 10px 24px -10px rgba(0,119,143,0.55); }
+  .btn.ghost{ background:transparent; color:var(--ink); border:1.5px solid var(--line); }
+  .btn.ghost:hover{ background:var(--paper-alt); box-shadow:none; }
+  .btn.ghost.on-dark{ color:#fff; border-color:rgba(255,255,255,0.35); }
+  .btn.ghost.on-dark:hover{ background:rgba(255,255,255,0.12); }
+  .btn.alt{
+    background:linear-gradient(90deg, var(--grad-4), #FF8A3D);
+    color:#fff;
+  }
+  .btn.alt:hover{ box-shadow:0 10px 24px -10px rgba(232,105,10,0.55); }
+
+  /* ---------- Insight cards ---------- */
+  .insight{
+    position:relative; overflow:hidden;
+    background:var(--card); border:1px solid var(--line); border-radius:20px;
+    padding:26px 28px; margin-bottom:18px; box-shadow:var(--shadow);
+    transition:transform .2s ease, box-shadow .2s ease;
+  }
+  .insight:hover{ transform:translateY(-2px); }
+  .insight::before{ content:""; position:absolute; inset-inline-start:0; top:0; height:4px; width:100%; background:linear-gradient(90deg, var(--grad-1), var(--grad-2)); }
+  .insight-head{ display:flex; align-items:flex-start; gap:16px; margin-bottom:12px; }
+  .insight-head .num-badge{
+    flex:0 0 auto; width:42px; height:42px; border-radius:13px;
+    background:var(--brass-soft); color:var(--brass-deep);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Rubik'; font-weight:800; font-size:1.05rem;
+  }
+  .insight-head h3{ font-size:1.25rem; line-height:1.4; }
+  .insight-tag{ font-size:0.78rem; color:var(--ink-faint); margin-top:5px; font-weight:600; }
+  .insight p.body-txt{ color:var(--ink-soft); margin-bottom:14px; }
+  .insight .from-to{
+    display:flex; align-items:center; gap:10px; margin-bottom:14px;
+    font-family:'Rubik'; font-weight:600; font-size:0.98rem; color:var(--ink);
+    background:var(--paper-alt); border:1px solid var(--line); border-radius:10px; padding:10px 14px; width:fit-content;
+  }
+  .insight .from-to .arrow{ color:var(--teal); font-weight:700; }
+  details.disc{ border-top:1px dashed var(--line); padding-top:10px; }
+  details.disc summary{
+    cursor:pointer; font-size:1rem; font-weight:700; color:var(--brass-deep);
+    list-style:none; display:flex; align-items:center; gap:6px;
+  }
+  details.disc summary::-webkit-details-marker{ display:none; }
+  details.disc summary::before{ content:"◂"; transition:transform .2s ease; font-size:0.7rem; }
+  details.disc[open] summary::before{ transform:rotate(-90deg); }
+  details.disc ul{ margin:12px 4px 0; padding-right:18px; font-size:1rem; color:var(--ink-soft); display:flex; flex-direction:column; gap:9px; line-height:1.6;}
+  .open-questions ul{ padding-right:20px; font-size:1rem; color:var(--ink-soft); display:flex; flex-direction:column; gap:10px; line-height:1.6; }
+  .open-questions li::marker{ color:var(--brass-deep); }
+
+  /* ---------- Rating scale ---------- */
+  .q-item{
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding:16px 0; border-bottom:1px solid var(--line);
+  }
+  .q-item:last-child{ border-bottom:none; }
+  .q-item .q-text{ font-size:0.95rem; flex:1; }
+  .scale{ display:flex; gap:6px; flex:0 0 auto; }
+  .scale button{
+    all:unset; width:34px; height:34px; border-radius:50%;
+    border:1.5px solid var(--line); display:flex; align-items:center; justify-content:center;
+    font-size:0.82rem; color:var(--ink-soft); transition:all .15s ease;
+  }
+  .scale button:hover{ border-color:var(--brass); color:var(--brass-deep); }
+  .scale button.sel{
+    background:linear-gradient(135deg, var(--grad-1), var(--grad-2));
+    border-color:transparent; color:#fff; font-weight:800;
+  }
+
+  .score-panel{
+    display:flex; align-items:center; gap:24px; margin-top:26px;
+    background:var(--paper-alt); border:1px solid var(--line); border-radius:20px; padding:22px 26px;
+  }
+  .score-panel .txt{ flex:1; }
+  .score-panel .txt .band{ font-family:'Rubik'; font-weight:800; font-size:1.15rem; margin-bottom:6px; }
+  .score-panel .txt p{ font-size:0.9rem; color:var(--ink-soft); }
+  .score-panel .fine{ font-size:0.78rem; color:var(--ink-faint); margin-top:8px; }
+
+  .gaps-list{ display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+  .gap-row{ display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:9px 12px; }
+  .gap-score{ flex:0 0 auto; font-family:'Rubik'; font-weight:800; font-size:0.8rem; color:var(--rust); background:var(--rust-soft); border-radius:999px; padding:3px 9px; }
+  .gap-txt{ font-size:0.87rem; color:var(--ink); }
+  .gap-row{ align-items:flex-start; }
+  .gap-tip{ display:block; font-size:0.8rem; color:var(--ink-soft); margin-top:4px; }
+  .gap-row.strength .gap-score{ color:var(--teal); background:var(--teal-soft); }
+
+  .lever-block{ margin-bottom:26px; }
+  .lever-title{ display:flex; align-items:center; gap:12px; margin-bottom:6px; }
+  .lever-title .icon{
+    width:36px;height:36px;border-radius:11px; background:var(--brass-soft); color:var(--brass-deep);
+    display:flex; align-items:center; justify-content:center; font-size:1rem;
+  }
+  .lever-title h4{ font-size:1.05rem; }
+  .lever-title .lever-score{ margin-inline-start:auto; font-size:0.85rem; color:var(--ink-soft); font-weight:600; }
+  .lever-verdict{ display:flex; align-items:center; gap:10px; margin-top:12px; padding:0 2px; flex-wrap:wrap; }
+  .lever-verdict span:last-child{ font-size:0.85rem; color:var(--ink-soft); flex:1; min-width:200px; }
+
+  /* ---------- Warning signs ---------- */
+  .sign-card{ display:flex; gap:16px; background:var(--card); border:1px solid var(--line); border-radius:18px; padding:20px 22px; margin-bottom:14px; box-shadow:var(--shadow); }
+  .sign-card .idx{ font-family:'Rubik'; font-weight:800; font-size:1.4rem; color:transparent; -webkit-text-stroke:1.3px var(--brass-deep); flex:0 0 auto; }
+  .sign-card h4{ font-size:1rem; margin-bottom:6px; }
+  .sign-card p{ font-size:0.87rem; color:var(--ink-soft); }
+
+  .checklist{ display:flex; flex-direction:column; gap:2px; }
+  .chk-item{ display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:10px; transition:background .15s ease; cursor:pointer; }
+  .chk-item:hover{ background:var(--paper-alt); }
+  .chk-item .box{
+    width:22px; height:22px; border-radius:7px; border:1.5px solid var(--line);
+    display:flex; align-items:center; justify-content:center; flex:0 0 auto; color:transparent; font-size:0.8rem;
+    transition:all .15s ease;
+  }
+  .chk-item.on .box{ background:linear-gradient(135deg, var(--grad-4), var(--brass)); border-color:transparent; color:#fff; }
+  .chk-item .lbl{ font-size:0.9rem; }
+
+  /* ---------- Risk map table ---------- */
+  .risk-table{ width:100%; border-collapse:collapse; margin-top:10px; }
+  .risk-table th{ text-align:right; font-size:0.75rem; color:var(--ink-soft); font-weight:600; padding:8px 10px; border-bottom:1.5px solid var(--line); }
+  .risk-table td{ padding:10px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  .risk-table input[type="text"]{
+    width:100%; border:1px solid var(--line); border-radius:8px; padding:8px 10px;
+    font-family:inherit; font-size:0.88rem; background:var(--paper-alt); color:var(--ink);
+  }
+  .risk-table input[type="range"]{ width:100%; accent-color:var(--brass); }
+  .rangeval{ font-size:0.78rem; color:var(--ink-soft); text-align:center; display:block; margin-top:2px;}
+  .risk-badge{
+    display:inline-block; padding:5px 12px; border-radius:999px; font-size:0.78rem; font-weight:700;
+  }
+  .risk-badge.high{ background:var(--rust-soft); color:var(--rust); }
+  .risk-badge.med{ background:var(--amber-soft); color:var(--amber); }
+  .risk-badge.low{ background:var(--teal-soft); color:var(--teal); }
+  .risk-legend{ display:flex; flex-direction:column; gap:12px; }
+  .rl-row{ display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap; }
+  .rl-row .risk-badge{ flex:0 0 auto; margin-top:2px; }
+  .rl-row span:last-child{ flex:1; min-width:220px; font-size:0.87rem; color:var(--ink-soft); line-height:1.6; }
+  .del-row{ all:unset; cursor:pointer; color:var(--ink-faint); font-size:1.1rem; padding:4px 8px; }
+  .del-row:hover{ color:var(--rust); }
+
+  /* ---------- Summary ---------- */
+  .summary-grid{ display:grid; grid-template-columns:repeat(2, 1fr); gap:16px; margin-bottom:30px; }
+  .sum-card{ background:var(--card); border:1px solid var(--line); border-radius:18px; padding:20px 22px; display:flex; align-items:center; gap:16px; box-shadow:var(--shadow); }
+  .sum-card .info{ flex:1; }
+  .sum-card h4{ font-size:0.95rem; margin-bottom:4px; }
+  .sum-card p{ font-size:0.78rem; color:var(--ink-soft); }
+  .sum-card .not-done{ font-size:0.78rem; color:var(--ink-faint); font-style:italic; }
+
+  .final-q{ background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px 22px; margin-bottom:12px; display:flex; gap:14px; align-items:flex-start; box-shadow:var(--shadow);}
+  .final-q .qn{ font-family:'Rubik'; color:var(--brass-deep); font-weight:800; }
+
+  footer.credit{ text-align:center; color:var(--ink-faint); font-size:0.8rem; margin-top:50px; padding-top:20px; border-top:1px solid var(--line); }
+
+  .client-list{ display:flex; flex-wrap:wrap; gap:10px; }
+  .client-chip{
+    display:inline-flex; align-items:center;
+    background:var(--paper-alt); border:1px solid var(--line); border-radius:999px;
+    padding:8px 16px; font-size:0.85rem; font-weight:600; color:var(--ink);
+  }
+  .cta-card::before{ background:linear-gradient(90deg, var(--grad-4), var(--grad-1)); }
+
+  /* mobile nav toggle */
+  .mobile-bar{ display:none; }
+
+  @media (max-width: 880px){
+    .app{ flex-direction:column; }
+    .sidebar{ width:100%; flex:none; position:relative; height:auto; padding:16px; }
+    .mobile-bar{ display:flex; align-items:center; justify-content:space-between; }
+    nav.steps{ display:none; }
+    nav.steps.open{ display:flex; margin-top:14px; }
+    .wrap{ padding:34px 20px 70px; }
+    .hero{ flex-direction:column; text-align:center; padding:30px 24px; }
+    .grid-4{ grid-template-columns:1fr; }
+    .summary-grid{ grid-template-columns:1fr; }
+    .score-panel{ flex-direction:column; text-align:center; }
+  }
+
+  @media print{
+    .sidebar, .btn.ghost, .no-print{ display:none !important; }
+    .screen{ display:block !important; }
+    body{ background:#fff; color:#111; }
+    .card, .insight, .sign-card, .sum-card, .final-q, .mini-card{ box-shadow:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="mobile-bar">
+      <div class="brand" style="margin-bottom:0; display:flex; align-items:center; gap:10px;">
+        <div class="mark" style="width:34px;height:34px; margin-bottom:0;"></div>
+        <h1 style="font-size:1rem;">מצפן השינוי</h1>
+      </div>
+      <button class="btn ghost on-dark" style="padding:8px 14px;" onclick="document.querySelector('nav.steps').classList.toggle('open')">☰ תפריט</button>
+    </div>
+    <div class="logo-wordmark" id="logoWordmark">
+      <div>
+        <img src="data:image/png;base64,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" alt="Blanchard">
+        <div class="logo-sub">ISRAEL</div>
+      </div>
+    </div>
+    <div class="brand" id="deskBrand">
+      <div class="mark"></div>
+      <h1>מצפן השינוי</h1>
+      <p>ערכת אבחון להובלת שינוי בעידן ה-AI</p>
+    </div>
+    <nav class="steps" id="stepsNav"></nav>
+    <div class="footer-note">כלי זה מבוסס על "הובלת אנשים וארגונים בעידן ה-AI", מדריך עבודה למנהלי HR, L&amp;D והנהלות בכירות · ארז אלמוגי, CEO, Blanchard Israel.<br><br><b>© כל הזכויות שמורות Blanchard Israel LTD</b></div>
+  </aside>
+
+  <main id="main"></main>
+</div>
+
+<script>
+/* =========================================================
+   CONTENT DATA
+   ========================================================= */
+const SECTIONS = [
+  {id:'intro', label:'מבוא'},
+  {id:'insights', label:'6 שאלות מפתח'},
+  {id:'manager', label:'שאלון מנהלים'},
+  {id:'warnings', label:'דגלים לתשומת לב'},
+  {id:'riskmap', label:'מפת סיכוני שינוי'},
+  {id:'org', label:'שאלון ארגוני'},
+  {id:'scorecard', label:'Change Capability Scorecard'},
+  {id:'summary', label:'סיכום'},
+  {id:'about', label:'אודות Blanchard'},
+];
+
+const INSIGHTS = [
+  { n:1, title:'מאיום על התפקיד לאיום על הזהות', from:'תפקיד', to:'זהות',
+    question:'האם אנחנו מבינים מה קורה לזהות המקצועית של העובדים שלנו כש-AI נכנס לתמונה?',
+    body:'ההתנגדות העמוקה ביותר לשינוי בעידן ה-AI לרוב אינה קשורה לטכנולוגיה עצמה. כאשר כלי AI מסוגל לבצע חלק מהמשימות שהגדירו את המומחיות של אדם, השאלה שעולה אצלו אינה רק "איך אני עובד עכשיו" אלא שאלה עמוקה הרבה יותר - "מי אני מקצועית, אם המחשב יודע לעשות את מה שרק אני ידעתי לעשות". <strong>זו לא התנגדות רציונלית שניתן לפתור בהסבר טכני - זו תגובה פסיכולוגית לאיום על הזהות המקצועית (Identity Transition), וההתעלמות ממנה היא אחד הגורמים המשמעותיים ביותר לכישלון שינויים.</strong> במקביל, המנהלים עצמם עוברים את אותו תהליך: התפקיד הניהולי הופך בהדרגה מ"הפונקציה שיודעת" ל"פונקציה תומכת שלומדת יחד עם הצוות" - שינוי זהות ניהולי, לא רק מיומנות חדשה.',
+    q:['האם המנהלים שלנו יודעים לזהות כאשר התנגדות לשינוי היא למעשה איום זהותי, ולא רק חשש טכני או תפעולי?','כיצד אנחנו תומכים בעובדים שחשים שהמומחיות שהם בנו לאורך שנים "מאבדת ערך"?','האם המנהלים שלנו מוכנים לעבור בעצמם ממעמד של "המומחה שיודע" למעמד של שותף לומד לצד הצוות?'] },
+  { n:2, title:'מיתרון של ידע ליתרון של למידה', from:'ידע', to:'למידה',
+    question:'האם אנחנו עדיין מעריכים אנשים בעיקר על הידע שיש להם - או על היכולת שלהם ללמוד מהר?',
+    body:'במשך שנים ארגונים גייסו, קידמו והעריכו אנשים בעיקר על בסיס הידע והניסיון שצברו. בעולם שבו מידע זמין בלחיצת כפתור וכלי AI מסוגלים לייצר תוכן, לנתח מידע ולהציע פתרונות בתוך שניות — הידע לבדו כבר אינו מספיק. היתרון עובר לאנשים ולארגונים שמסוגלים ללמוד מהר יותר, להסתגל מהר יותר, ולשנות הרגלים מהר יותר. <strong>במילים אחרות: המיומנות החשובה ביותר של השנים הקרובות אינה בהכרח AI — היא היכולת ללמוד.</strong>',
+    q:['האם תרבות הלמידה שלנו תומכת בהתנסות ולמידה מתמשכת?','אילו אוכלוסיות בארגון עשויות להתקשות יותר בהסתגלות?','כיצד אנו מפתחים כיום את יכולת הלמידה של העובדים והמנהלים?'] },
+  { n:3, title:'מתפקידים יציבים לתפקידים דינמיים', from:'יציב', to:'דינמי',
+    question:'האם אנחנו יודעים אילו תפקידים אצלנו ישתנו משמעותית בשנתיים הקרובות?',
+    body:'אחד המאפיינים הבולטים של עידן ה-AI הוא שתפקידים אינם נשארים קבועים לאורך זמן. משימות נעלמות, משימות חדשות נוצרות, חלק מהעבודה עובר לאוטומציה וחלק אחר הופך מורכב ואנושי יותר. המשמעות היא שתפקידים יהפכו גמישים ודינמיים יותר מאי פעם. <strong>השאלה כבר אינה "מה התפקיד שלי?" אלא "מה הערך שאני מביא?"</strong>',
+    q:['אילו תפקידים בארגון צפויים להשתנות משמעותית בשנתיים הקרובות?','אילו מיומנויות חדשות יידרשו?','האם קיימת אצלנו אסטרטגיית Reskilling ו-Upskilling ברורה?'] },
+  { n:4, title:'ממנהלים מפקחים למנהלים מובילי שינוי', from:'פיקוח', to:'הובלה',
+    question:'האם המנהלים שלנו יודעים להוביל אנשים בתוך אי-ודאות, לא רק לנהל משימות?',
+    body:'בעבר מנהלים נמדדו בעיקר על היכולת לתכנן, לפקח ולבקר. היום נדרש מהם משהו אחר: להוביל אנשים בתוך אי-ודאות, לבנות אמון גם כאשר לא כל התשובות ידועות, ולסייע לעובדים להתמודד עם שינוי מתמשך. <strong>זו אינה רק מיומנות ניהולית חדשה — זו הופכת להיות אחת היכולות הקריטיות ביותר של מנהלים.</strong>',
+    q:['האם המנהלים שלנו יודעים לנהל שיחות סביב שינוי?','האם הם יודעים לזהות התנגדויות וחששות?','האם הם מסוגלים לייצר מחויבות גם בתקופות של חוסר ודאות?'] },
+  { n:5, title:'מטכנולוגיה לאמון', from:'טכנולוגיה', to:'אמון',
+    question:'האם העובדים שלנו סומכים על כך שיהיה להם מקום בעולם החדש שנבנה?',
+    body:'כאשר עובדים אינם יודעים כיצד ייראה תפקידם בעתיד, הם מחפשים משהו אחר — לא ודאות, אמון. הם רוצים לדעת: האם הארגון אומר את האמת? האם המנהל שלי ילווה אותי גם בתקופות מורכבות? האם יש לי מקום בעולם החדש שנבנה? <strong>ככל שקצב השינוי עולה, כך האמון הופך למשאב אסטרטגי.</strong>',
+    q:['האם העובדים סומכים על המסרים שמגיעים מההנהלה?','האם מתקיימות שיחות פתוחות על חששות ואתגרים?','כיצד אנו מודדים אמון כיום?'] },
+  { n:6, title:'מניהול שינוי לבניית יכולת שינוי', from:'Change Management', to:'Change Capability',
+    question:'האם אנחנו בונים ארגון שיודע להשתנות שוב ושוב - או רק מנהלים את פרויקט השינוי הנוכחי?',
+    body:'במשך שנים ארגונים עסקו בניהול שינוי — פרויקט, תוכנית, הטמעה, סיום. המציאות החדשה שונה: השינוי הבא מתחיל לפני שהקודם הסתיים. <strong>לכן השאלה אינה כיצד לנהל שינוי אחד, אלא כיצד לבנות ארגון שיודע להשתנות שוב ושוב.</strong> זהו ההבדל בין Change Management לבין Change Capability.',
+    q:['עד כמה הארגון שלנו מסוגל להסתגל לשינויים תכופים?','האם אנו משקיעים בפיתוח היכולת להשתנות או רק בפרויקטי שינוי?','מהם החסמים המרכזיים שמונעים מאיתנו לנוע מהר יותר?'] },
+];
+
+const MANAGER_ITEMS = [
+  'להסביר את ה"למה" מאחורי השינוי',
+  'לבנות אמון גם כאשר לא כל התשובות ידועות',
+  'לנהל שיחות קשות בתקופות של אי־ודאות',
+  'לזהות כאשר התנגדות לשינוי נובעת מאיום על הזהות המקצועית של העובד, ולא רק מהיבטים טכניים',
+  'להתמודד עם שאלות שאין להן פתרון מיידי',
+  'להתאים את סגנון ההובלה לצרכים שונים של עובדים',
+  'לשמור על ביצועים תוך כדי שינוי',
+  'לעזור לעובדים לראות הזדמנות בתוך השינוי',
+  'לייצר מחויבות ולא רק ציות',
+  'לעבור בעצמם ממעמד של "המומחה שיודע הכל" למעמד של שותף לומד, לצד הצוות',
+];
+
+// One concrete follow-up tip per MANAGER_ITEMS item, same order/index.
+const MANAGER_TIPS = [
+  'שקלו סדנת תקשורת שינוי קצרה למנהלים, ממוקדת בבניית נרטיב ברור ועקבי.',
+  'תרגלו עם המנהלים איך אומרים "אנחנו עוד לא יודעים" בלי לאבד אמינות.',
+  'סדנת Coaching Conversations ממוקדת בשיחות שינוי יכולה לעזור כאן.',
+  'זו בדיוק הנקודה של תובנה #1 בערכה הזו (Identity Transition) - שווה לחזור אליה.',
+  'קבעו מראש מתי "נחזור אליכם" - זה שומר על אמון גם בלי תשובה מיידית.',
+  'זה בדיוק מה ש-SLII® מפתח - ראו בעמוד "אודות Blanchard".',
+  'הגדירו יעדי ביניים ריאליים שמכירים בעומס השינוי הנוסף על הצוות.',
+  'שתפו סיפורי הצלחה פנימיים - עובדים מאמינים לעמיתים יותר מלמצגות.',
+  'שאלו את הצוות "מה הייתם עושים אחרת?" - זו מחויבות אמיתית, לא רק אישור.',
+  'זו אולי הדרישה הכי לא אינטואיטיבית למנהלים ותיקים - כדאי לתת לה זמן ודיון פתוח.',
+];
+
+const WARNING_SIGNS_5 = [
+  { title:'שינוי למראית עין', body:'על פני השטח הכול נראה תקין — העובדים משתתפים, המנהלים מעדכנים, הפרויקט מתקדם. אבל כאשר בוחנים את ההתנהגות בפועל, מעט מאוד השתנה. <strong>אנשים מאמצים את השפה, אבל לא את ההתנהגות.</strong>' },
+  { title:'עלייה בציניות ובסקפטיות', body:'כאשר עובדים מתחילים לומר "גם זה יעבור" או "נראה כמה זמן זה יחזיק" — <strong>הבעיה בדרך כלל אינה הטכנולוגיה, אלא אמון.</strong> ציניות היא לעיתים קרובות סימפטום של עייפות משינוי.' },
+  { title:'מנהלים מתחילים להימנע משיחות קשות', body:'מנהלים דוחים שיחות, נמנעים מלדבר על חששות, ומעדיפים לדבר על משימות ופחות על אנשים. <strong>במקרים רבים זהו סימן לכך שהמנהלים עצמם אינם בטוחים כיצד להתמודד עם השינוי.</strong>' },
+  { title:'ירידה ביוזמה ובנכונות להתנסות', body:'כאשר אנשים חוששים לטעות, הם מפסיקים לנסות — פחות רעיונות, פחות יוזמה, פחות חדשנות, יותר המתנה. <strong>זהו אחד המחירים הסמויים של שינוי לא מנוהל.</strong>' },
+  { title:'עומס שינוי', body:'לעיתים האתגר אינו ההתנגדות אלא העומס — עוד מערכת, עוד תהליך, עוד יוזמה, עוד שינוי. <strong>עובדים ומנהלים עשויים לרצות להצליח, אך פשוט לא להצליח להכיל את כל מה שמתרחש במקביל.</strong>' },
+  { title:'חרדת אובדן זהות מקצועית', body:'מתחת לפני השטח של התנגדות "טכנית" לכלי או תהליך, מסתתרת לעיתים קרובות שאלה עמוקה יותר - "מי אני מקצועית, אם הכלי יודע לעשות את מה שרק אני ידעתי לעשות". <strong>זו תגובה פסיכולוגית לאיום זהותי, לא התנגדות רציונלית שניתן לפתור בהסבר טכני</strong> - וההתעלמות ממנה היא אחד הגורמים המשמעותיים ביותר לכישלון שינויים בעידן ה-AI.' },
+];
+
+const WARNING_CHECKLIST_10 = [
+  'עובדים שומעים על השינוי אך לא באמת מבינים אותו',
+  'מנהלים מתקשים לענות על שאלות שאין להן תשובה ברורה',
+  'יש הסכמה פורמלית אך מעט שינוי התנהגותי',
+  'מנהלים נמנעים משיחות מורכבות',
+  'עלייה בציניות ובסקפטיות',
+  'מנהלים מרגישים "תקועים באמצע"',
+  'קצב השינוי גבוה מקצב הלמידה',
+  'עובדים אינם בטוחים מה מצופה מהם בעתיד',
+  'עובדים מביעים חשש שהמומחיות שלהם "מאבדת ערך" מול כלי AI',
+  'הארגון משקיע בטכנולוגיה יותר מאשר במנהלים',
+];
+
+const LEVERS = [
+  { key:'leadership', title:'מנהיגות', icon:'◎', items:['המנהלים שלנו יודעים להוביל שינוי','המנהלים מבינים כיצד AI משפיע על הזהות המקצועית של העובדים','המנהלים מייצרים מחויבות ולא רק ציות'] },
+  { key:'culture', title:'תרבות', icon:'❖', items:['עובדים מרגישים בטוחים להשמיע דעה','קיימת פתיחות לטעויות וללמידה','ניתן לנהל שיח פתוח על חששות'] },
+  { key:'learning', title:'למידה', icon:'▲', items:['קיימת אסטרטגיית Upskilling ו-Reskilling','עובדים לומדים באופן רציף','הלמידה מחוברת לצרכים העסקיים'] },
+  { key:'trust', title:'אמון', icon:'●', items:['קיימת אמונה בהנהלה','המסרים והפעולות עקביים','קיימת רמת אמון גבוהה במנהלים'] },
+];
+
+const SCORECARD_ITEMS = [
+  'להנהלה יש חזון ברור לגבי השפעת ה-AI על הארגון',
+  'המנהלים יודעים להוביל אנשים בתקופות של שינוי',
+  'קיימת רמת אמון גבוהה בין עובדים, מנהלים והנהלה',
+  'תרבות הארגון מעודדת למידה, התנסות והסתגלות',
+  'קיימת אסטרטגיית Upskilling ו-Reskilling ברורה',
+  'עובדים מרגישים בטוחים לשאול שאלות ולהעלות חששות',
+  'אנו מזהים מוקדם התנגדויות וסיכוני שינוי',
+  'קיימת עקביות בין המסרים לבין הפעולות בפועל',
+  'הארגון מסוגל להטמיע שינויים בקצב גבוה',
+  'המנהלים שלנו מבינים כיצד AI משפיע על הזהות המקצועית והביטחון העצמי של העובדים',
+];
+
+// One concrete follow-up tip per SCORECARD_ITEMS item, same order/index.
+const SCORECARD_TIPS = [
+  'התחילו מסדנת הנהלה קצרה לגיבוש שפה משותפת על AI וההשפעה שלו על הארגון.',
+  'זה בדיוק מה שכלי Leading People Through Change® מפתח.',
+  'כדאי למדוד אמון בפועל (סקר קצר, שיחות 1:1) ולא רק להניח שהוא קיים.',
+  'בדקו האם טעויות בהתנסות מתוגמלות או נענשות אצלכם בפועל.',
+  'מיפוי מיומנויות עתידי לפי תפקיד יכול להיות נקודת התחלה טובה.',
+  'פורומי שאלות פתוחים מול ההנהלה יכולים לחשוף הרבה, מהר.',
+  'מפת סיכוני השינוי בערכה הזו יכולה לשמש כאן ככלי קבוע, לא חד-פעמי.',
+  'עובדים בודקים עקביות בין מסר לפעולה יותר מכל דבר אחר - שימו לב לפערים.',
+  'בדקו כמה זמן לוקח בפועל משינוי מוצהר עד הטמעה בשטח.',
+  'תובנה #1 בערכה הזו (Identity Transition) היא נקודת התחלה טובה לשיחה הזו.',
+];
+
+const FINAL_QUESTIONS = [
+  'האם המנהלים שלנו יודעים להוביל אנשים בתוך שינוי מתמשך?',
+  'האם העובדים שלנו מאמינים שיש להם מקום בעולם החדש שנבנה?',
+  'האם תרבות הארגון מעודדת למידה, התנסות והסתגלות?',
+  'והאם אנחנו בונים יכולת ארגונית להשתנות – או רק מנהלים את פרויקט השינוי הבא?',
+];
+
+const ABOUT_SOLUTIONS = [
+  { title:'Leading People Through Change®', body:'פיתוח מנהלים להובלת אנשים בתקופות של שינוי, אי־ודאות וטרנספורמציה.' },
+  { title:'Self Leadership', body:'פיתוח עובדים שמגלים אחריות, יוזמה ויכולת הסתגלות גם כאשר המציאות משתנה.' },
+  { title:'SLII®', body:'פיתוח מנהלים שיודעים להתאים את סגנון ההובלה לצורכי העובד והמשימה – יכולת קריטית בתקופות של שינוי.' },
+  { title:'Blanchard Management Essentials®', body:'יצירת שפה ניהולית משותפת ותשתית עקבית לניהול אנשים וביצועים.' },
+  { title:'Team Leadership', body:'חיזוק שיתוף הפעולה, האחריות המשותפת והביצועים של צוותים בסביבה משתנה.' },
+];
+
+const ABOUT_CLIENTS = ['ZIM','Ormat','Global-e','Nextsilicon','Glassbox','Redis','AWS','Sodastream','תעשייה אווירית','מזרחי טפחות','דמרי','צה"ל','ארנון תדמור','דלויט','Marvell','Mer Group','Stratasys','KLA'];
+
+const ABOUT_EMAIL = 'erez@blanchard.co.il';
+const ABOUT_SUBJECT = encodeURIComponent('בקשה לשיחת ייעוץ - Change Capability');
+const ABOUT_BODY = encodeURIComponent('שלום ארז,\n\nעברתי על ערכת האבחון "מצפן השינוי" ואשמח לקבוע שיחת ייעוץ קצרה.\n\nתודה,');
+
+/* =========================================================
+   STATE
+   ========================================================= */
+const state = {
+  manager: Array(10).fill(null),
+  warnings: Array(10).fill(false),
+  org: { leadership:[null,null,null], culture:[null,null,null], learning:[null,null,null], trust:[null,null,null] },
+  scorecard: Array(10).fill(null),
+  risk: [],
+  riskIdSeed: 0,
+  current: 'intro',
+};
+
+/* =========================================================
+   HELPERS
+   ========================================================= */
+function pct(val, max){ return Math.max(0, Math.min(100, Math.round((val/max)*100))); }
+
+function bandColor(pctVal){
+  if(pctVal >= 75) return 'var(--teal)';
+  if(pctVal >= 50) return 'var(--amber)';
+  return 'var(--rust)';
+}
+
+function compassHTML(valueLabel, sub, pctVal, size){
+  const color = bandColor(pctVal);
+  return `<div class="compass ${size==='small'?'small':''}" style="--pct:${pctVal}; --gauge-color:${color};">
+    <div class="orbit"></div>
+    <div class="ring"></div>
+    <div class="needle-core"><b>${valueLabel}</b><span>${sub}</span></div>
+  </div>`;
+}
+
+function sum(arr){ return arr.reduce((a,b)=> a + (b||0), 0); }
+function filledCount(arr){ return arr.filter(v=>v!==null && v!==undefined).length; }
+
+// Returns the lowest-scoring items (value <= threshold), sorted weakest-first.
+// Falls back to the single weakest item if none are at/under the threshold, so there's always something concrete to point to.
+function lowestItems(items, values, threshold=2){
+  const pairs = items.map((txt,i)=>({txt, val:values[i], idx:i})).filter(p=>p.val!==null && p.val!==undefined);
+  let lows = pairs.filter(p=>p.val<=threshold).sort((a,b)=>a.val-b.val);
+  if(lows.length===0 && pairs.length){
+    const minVal = Math.min(...pairs.map(p=>p.val));
+    if(minVal <= 3) lows = pairs.filter(p=>p.val===minVal);
+  }
+  return lows.slice(0,4);
+}
+
+function highestItems(items, values, threshold=4){
+  const pairs = items.map((txt,i)=>({txt, val:values[i], idx:i})).filter(p=>p.val!==null && p.val!==undefined);
+  let highs = pairs.filter(p=>p.val>=threshold).sort((a,b)=>b.val-a.val);
+  if(highs.length===0 && pairs.length){
+    const maxVal = Math.max(...pairs.map(p=>p.val));
+    if(maxVal >= 3) highs = pairs.filter(p=>p.val===maxVal);
+  }
+  return highs.slice(0,3);
+}
+
+function gapsListHTML(lows, emptyMsg, tips){
+  if(!lows.length) return `<p style="color:var(--ink-soft); font-size:0.88rem; margin-top:10px;">${emptyMsg}</p>`;
+  return `<div class="gaps-list">
+    ${lows.map(l=>`<div class="gap-row"><span class="gap-score">${l.val}/5</span><div><span class="gap-txt">${l.txt}</span>${tips && tips[l.idx] ? `<span class="gap-tip">💡 ${tips[l.idx]}</span>` : ''}</div></div>`).join('')}
+  </div>`;
+}
+
+function strengthsListHTML(highs){
+  if(!highs.length) return '';
+  return `<div class="gaps-list">
+    ${highs.map(h=>`<div class="gap-row strength"><span class="gap-score">${h.val}/5</span><span class="gap-txt">${h.txt}</span></div>`).join('')}
+  </div>`;
+}
+
+function sumCardHTML(title, sub, done, valueLabel, valueSub, pctVal){
+  return `<div class="sum-card">
+    ${done ? compassHTML(valueLabel, valueSub, pctVal, 'small') : `<div class="compass small" style="--pct:0; --gauge-color:var(--paper-alt);"><div class="ring"></div><div class="needle-core"><b>–</b></div></div>`}
+    <div class="info">
+      <h4>${title}</h4>
+      ${done ? `<p>${sub}</p>` : `<p class="not-done">טרם הושלם</p>`}
+    </div>
+  </div>`;
+}
+
+function dashboardGridHTML(){
+  const mgrFilled = filledCount(state.manager)===10;
+  const mgrTotal = sum(state.manager);
+  const orgAll = [...state.org.leadership, ...state.org.culture, ...state.org.learning, ...state.org.trust];
+  const orgFilled = filledCount(orgAll)===12;
+  const orgTotal = sum(orgAll);
+  const scFilled = filledCount(state.scorecard)===10;
+  const scTotal = sum(state.scorecard);
+  const warnCount = state.warnings.filter(Boolean).length;
+
+  return `<div class="summary-grid">
+    ${sumCardHTML('האם המנהלים יהיו צוואר הבקבוק?', mgrFilled?managerBand(mgrTotal).label:'', mgrFilled, mgrTotal, '/50', pct(mgrTotal,50))}
+    ${sumCardHTML('כמה דגלי אזהרה כבר בשטח?', warnCount>0?warningBand(warnCount).label:'', warnCount>0, warnCount, '/10 סומנו', pct(warnCount,10))}
+    ${sumCardHTML('כמה מוכן הארגון להשתנות שוב?', orgFilled?orgBand(orgTotal).label:'', orgFilled, orgTotal, '/60', pct(orgTotal,60))}
+    ${sumCardHTML('יש לכם יסודות להצליח בשינוי הבא?', scFilled?scorecardBand(scTotal).label:'', scFilled, scTotal, '/50', pct(scTotal,50))}
+  </div>`;
+}
+
+/* =========================================================
+   RENDER: NAV
+   ========================================================= */
+function renderNav(){
+  const nav = document.getElementById('stepsNav');
+  nav.innerHTML = SECTIONS.map(s=>{
+    const active = s.id===state.current ? 'active' : '';
+    const isAbout = s.id==='about' ? 'about-item' : '';
+    return `<button class="${active} ${isAbout}" onclick="goTo('${s.id}')">
+      <span class="dot"></span><span class="lbl">${s.label}</span>
+    </button>`;
+  }).join('');
+}
+
+function goTo(id){
+  state.current = id;
+  renderNav();
+  renderMain();
+  document.querySelector('nav.steps').classList.remove('open');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+window.goTo = goTo;
+
+/* =========================================================
+   RENDER: MAIN ROUTER
+   ========================================================= */
+function renderMain(){
+  const main = document.getElementById('main');
+  let html = '';
+  switch(state.current){
+    case 'intro': html = renderIntro(); break;
+    case 'insights': html = renderInsights(); break;
+    case 'manager': html = renderManager(); break;
+    case 'warnings': html = renderWarnings(); break;
+    case 'riskmap': html = renderRiskMap(); break;
+    case 'org': html = renderOrg(); break;
+    case 'scorecard': html = renderScorecard(); break;
+    case 'summary': html = renderSummary(); break;
+    case 'about': html = renderAbout(); break;
+  }
+  main.innerHTML = `<div class="screen active"><div class="wrap">${html}</div></div>`;
+  attachHandlers();
+}
+
+/* =========================================================
+   SCREEN: INTRO
+   ========================================================= */
+function renderIntro(){
+  return `
+    <div class="hero">
+      <div class="hero-text">
+        <div class="eyebrow">ערכת עבודה למנהלי HR, L&amp;D והנהלות בכירות</div>
+        <h1>האיום הגדול של השנים הקרובות אינו <span class="grad-word">ה-AI</span> —<br>הוא קצב השינוי שהוא מייצר.</h1>
+        <p>כלי אבחון אינטראקטיבי, המבוסס על "הובלת אנשים וארגונים בעידן ה-AI", לבחינת מוכנות המנהלים והארגון לעידן של שינוי מתמשך.</p>
+        <p style="color:#8FA3B8; font-size:0.85rem; margin-top:10px;">רלוונטי לכל צוות ניהולי - בין אם ברמת החברה, החטיבה, המחלקה או הצוות.</p>
+        <div style="margin-top:22px; display:flex; gap:12px; flex-wrap:wrap;">
+          <button class="btn" onclick="goTo('insights')">התחילו ב-6 השאלות ←</button>
+          <button class="btn ghost on-dark" onclick="goTo('manager')">קפצו לשאלונים</button>
+        </div>
+      </div>
+      <div class="hero-compass">${compassHTML('AI', 'קצב השינוי', 82, 'big')}</div>
+    </div>
+
+    <div class="roadmap-strip">
+      <div class="rm-step"><div class="rm-num">1</div><div><b>תעברו 4 תחנות אבחון</b><span>שאלון מנהלים, דגלים לתשומת לב, מפת סיכונים, שאלון ארגוני</span></div></div>
+      <div class="rm-arrow">←</div>
+      <div class="rm-step"><div class="rm-num">2</div><div><b>תלמדו 6 שאלות מפתח</b><span>שכל הנהלה חייבת לשאול על AI, אנשים וארגון</span></div></div>
+      <div class="rm-arrow">←</div>
+      <div class="rm-step"><div class="rm-num">3</div><div><b>תקבלו תמונת מצב</b><span>ציונים, פערים ספציפיים והמלצות לכל תחום</span></div></div>
+      <div class="rm-arrow">←</div>
+      <div class="rm-step"><div class="rm-num">4</div><div><b>תצאו עם כיוון פעולה</b><span>שאלות מוכנות לישיבת ההנהלה הבאה</span></div></div>
+    </div>
+
+    <h3 style="margin:8px 0 6px; font-size:1.3rem;">הדשבורד שלכם</h3>
+    <p class="subtitle" style="margin-bottom:18px;">זו התוצאה שתקבלו בסוף - ציונים, פערים וחוזקות בכל אחד מארבעת הכלים, בזמן אמת. עכשיו היא עדיין ריקה, וזה בסדר גמור - זה בדיוק המקום שממנו מתחילים.</p>
+    ${dashboardGridHTML()}
+    <div style="text-align:left; margin-top:20px; margin-bottom:44px;"><button class="btn ghost" onclick="goTo('manager')">קפצו ישר לשאלונים ←</button></div>
+
+    <h2 class="title">האתגר הגדול אינו הטכנולוגיה</h2>
+    <p class="subtitle">ככל שפוגשים יותר ארגונים, מתברר ש<strong>האתגר האמיתי של השנים הקרובות אינו הטכנולוגיה עצמה — אלא היכולת של אנשים, מנהלים וארגונים להסתגל לקצב השינוי שהיא מייצרת.</strong></p>
+
+    <p style="font-size:1.05rem; color:var(--ink); font-weight:500; line-height:1.7; margin-top:-6px;">השאלה כבר אינה "כיצד מטמיעים AI?" אלא "כיצד בונים ארגון המסוגל ללמוד, להסתגל ולהשתנות שוב ושוב?"</p>
+
+    <div class="card" style="margin-top:10px;">
+      <h4 style="font-size:1.05rem; margin-bottom:8px;">כיצד מומלץ להשתמש בערכה?</h4>
+      <p style="color:var(--ink-soft); font-size:0.92rem;">אפשר לקרוא אותה תוך 15 דקות, אך הערך האמיתי נוצר כאשר משתמשים בה ככלי לחשיבה, לדיון ולקבלת החלטות. מומלץ לבחור מספר שאלות מכל פרק ולקיים סביבן דיון הנהלה או דיון HR, ולבחון בכנות: היכן הארגון נמצא כיום? מה צפוי להשתנות בשנים הקרובות? ומה נדרש לעשות כבר עכשיו כדי להיערך טוב יותר?</p>
+    </div>
+
+    <div class="quote-block" style="margin-top:30px;">
+      אם בעוד שנתיים חלק משמעותי מהעבודה בארגון שלכם ייראה אחרת — האם המנהלים, התרבות והעובדים שלכם מוכנים להוביל ולהצליח בתוך המציאות החדשה?
+      <cite>— שאלה אחת שכדאי לקחת איתכם כבר עכשיו</cite>
+    </div>
+
+    <div style="text-align:left; margin-top:20px;"><button class="btn" onclick="goTo('insights')">התחילו ב-6 השאלות ←</button></div>
+  `;
+}
+
+/* =========================================================
+   SCREEN: INSIGHTS
+   ========================================================= */
+function renderInsights(){
+  const cards = INSIGHTS.map(ins => `
+    <div class="insight">
+      <div class="insight-head">
+        <div class="num-badge">${ins.n}</div>
+        <div>
+          <h3>${ins.question}</h3>
+          <div class="insight-tag">${ins.title}</div>
+        </div>
+      </div>
+      <div class="from-to">${ins.from} <span class="arrow">←</span> ${ins.to}</div>
+      <p class="body-txt">${ins.body}</p>
+      <details class="disc">
+        <summary>שאלות לדיון</summary>
+        <ul>${ins.q.map(q=>`<li>${q}</li>`).join('')}</ul>
+      </details>
+    </div>
+  `).join('');
+
+  return `
+    <div class="eyebrow">חלק א׳</div>
+    <h2 class="title">6 שאלות שכל הנהלה חייבת לשאול</h2>
+    <p class="subtitle">בשיח הציבורי סביב AI רוב תשומת הלב מופנית לטכנולוגיה. אך מנקודת מבט ניהולית, <strong>השאלה החשובה היא כיצד היא משנה את הדרך שבה אנשים עובדים, מנהלים, לומדים ומייצרים ערך.</strong></p>
+    ${cards}
+    <div class="quote-block">רוב הארגונים לא ייכשלו משום שלא אימצו AI. הם יתקשו משום שלא פיתחו את היכולת של אנשים ומנהלים להסתגל למציאות החדשה.</div>
+    <div style="text-align:left; margin-top:20px;"><button class="btn" onclick="goTo('manager')">להמשך: שאלון המנהלים ←</button></div>
+  `;
+}
+
+/* =========================================================
+   SCREEN: MANAGER QUESTIONNAIRE
+   ========================================================= */
+function managerBand(total){
+  if(total>=40) return {label:'40–50 נקודות', text:'המנהלים שלכם נמצאים במקום טוב להוביל שינוי. <strong>האתגר המרכזי הוא המשך פיתוח והטמעה.</strong>'};
+  if(total>=25) return {label:'25–39 נקודות', text:'<strong>קיימים פערים משמעותיים ביכולת הניהולית להוביל שינוי.</strong> כדאי להשקיע בפיתוח ממוקד של מנהלים.'};
+  return {label:'פחות מ-25 נקודות', text:'<strong>קיים סיכון ממשי לכך שהמנהלים יהפכו לצוואר בקבוק בתהליכי שינוי עתידיים.</strong>'};
+}
+
+function renderManager(){
+  const filled = filledCount(state.manager);
+  const total = sum(state.manager);
+  const items = MANAGER_ITEMS.map((txt,i)=>`
+    <div class="q-item">
+      <div class="q-text">${txt}</div>
+      <div class="scale">
+        ${[1,2,3,4,5].map(v=>`<button data-group="manager" data-idx="${i}" data-val="${v}" class="${state.manager[i]===v?'sel':''}">${v}</button>`).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  let panel = '';
+  if(filled===10){
+    const b = managerBand(total);
+    const lows = lowestItems(MANAGER_ITEMS, state.manager, 2);
+    const highs = highestItems(MANAGER_ITEMS, state.manager, 4);
+    panel = `<div class="score-panel">
+      ${compassHTML(total, 'מתוך 50', pct(total,50))}
+      <div class="txt">
+        <div class="band">${b.label}</div>
+        <p>${b.text}</p>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px;">
+      <h4 style="font-size:0.98rem; margin-bottom:4px;">הפערים הבולטים ביותר לפי התשובות שלכם</h4>
+      ${gapsListHTML(lows, 'לא זוהו פערים בולטים בפריטים הבודדים - אפשר להתמקד בחיזוק והעמקה של החוזקות הקיימות.', MANAGER_TIPS)}
+    </div>
+    ${highs.length ? `<div class="card" style="margin-top:16px;">
+      <h4 style="font-size:0.98rem; margin-bottom:4px;">החוזקות הבולטות ביותר</h4>
+      ${strengthsListHTML(highs)}
+    </div>` : ''}`;
+  } else {
+    panel = `<div class="score-panel"><div class="txt"><p style="color:var(--ink-faint);">דרגו את כל 10 ההיגדים כדי לקבל את התוצאה (${filled}/10 הושלמו).</p></div></div>`;
+  }
+
+  return `
+    <div class="eyebrow">כלי עבודה #2</div>
+    <h2 class="title">מדד המוכנות הניהולית להובלת שינוי</h2>
+    <p class="subtitle"><strong>דרגו כל היגד בין 1 ל-5 (1 – כלל לא, 5 – במידה רבה): המנהלים שלנו יודעים —</strong></p>
+    <div class="card">${items}</div>
+    ${panel}
+    <details class="disc" style="margin-top:24px;">
+      <summary>שאלות לדיון הנהלה</summary>
+      <ul>
+        <li>אילו מנהלים בארגון מובילים שינוי בצורה יוצאת דופן? מה הם עושים אחרת?</li>
+        <li>אילו יכולות ניהוליות יהיו קריטיות יותר בעוד שלוש שנים?</li>
+        <li>האם אנו מפתחים את המנהלים שלנו להוביל שינוי או בעיקר לנהל משימות?</li>
+        <li>אם נצא מחר למהלך AI משמעותי, עד כמה אנחנו בטוחים שהמנהלים שלנו מוכנים להוביל את האנשים דרכו?</li>
+      </ul>
+    </details>
+    <div style="text-align:left; margin-top:20px;"><button class="btn" onclick="goTo('warnings')">להמשך: דגלים לתשומת לב ←</button></div>
+  `;
+}
+
+/* =========================================================
+   SCREEN: WARNING SIGNS
+   ========================================================= */
+function warningBand(count){
+  if(count<=2) return {label:'מצב יציב', text:'מספר הסימנים שזוהו נמוך. <strong>כדאי להמשיך לעקוב לאורך זמן.</strong>', cls:'low'};
+  if(count<=5) return {label:'כדאי להעמיק בדיקה', text:'זוהו מספר סימנים. <strong>מומלץ לבחון לעומק ולשקול פיתוח ממוקד.</strong>', cls:'med'};
+  return {label:'נדרשת התייחסות', text:'<strong>זוהו סימנים רבים. ייתכן שהגיע הזמן להשקיע באופן ממוקד בפיתוח יכולות הובלת שינוי.</strong>', cls:'high'};
+}
+
+function renderWarnings(){
+  const signs = WARNING_SIGNS_5.map((s,i)=>`
+    <div class="sign-card">
+      <div class="idx">${String(i+1).padStart(2,'0')}</div>
+      <div><h4>${s.title}</h4><p>${s.body}</p></div>
+    </div>
+  `).join('');
+
+  const count = state.warnings.filter(Boolean).length;
+  const b = warningBand(count);
+  const chk = WARNING_CHECKLIST_10.map((txt,i)=>`
+    <div class="chk-item ${state.warnings[i]?'on':''}" data-warn-idx="${i}">
+      <div class="box">✓</div><div class="lbl">${txt}</div>
+    </div>
+  `).join('');
+
+  return `
+    <div class="eyebrow">חלק ג׳</div>
+    <h2 class="title">היכן השינוי צפוי לפגוש התנגדות?</h2>
+    <p class="subtitle"><strong>רוב תהליכי השינוי אינם נכשלים בגלל התנגדות גלויה — הם נכשלים בגלל סימנים קטנים שלא זוהו בזמן.</strong> להלן 6 דגלים מרכזיים לתשומת לב:</p>
+    ${signs}
+
+    <h3 style="margin:36px 0 6px; font-size:1.25rem;">צ'קליסט: 10 דגלים שכדאי לשים אליהם לב</h3>
+    <p class="subtitle">סמנו את הסימנים שאתם מזהים בארגון שלכם כיום.</p>
+    <div class="card"><div class="checklist">${chk}</div></div>
+
+    <div class="score-panel">
+      ${compassHTML(count, 'מתוך 10 סומנו', pct(count,10))}
+      <div class="txt">
+        <div class="band">${b.label}</div>
+        <p>${b.text}</p>
+        <p class="fine">בשיחות עם הנהלות וצוותי HR, נדיר למצוא ארגון שסובל מכל 10 הסימנים — כמעט תמיד מופיעים שניים או שלושה מהם. האתגר הוא לזהות אותם מוקדם.</p>
+      </div>
+    </div>
+    ${count>0 ? `<div class="card" style="margin-top:16px;">
+      <h4 style="font-size:0.98rem; margin-bottom:4px;">הדגלים שסימנתם</h4>
+      <div class="gaps-list">${WARNING_CHECKLIST_10.filter((t,i)=>state.warnings[i]).map(t=>`<div class="gap-row"><span class="gap-score">✓</span><span class="gap-txt">${t}</span></div>`).join('')}</div>
+    </div>` : ''}
+
+    <div style="text-align:left; margin-top:20px;"><button class="btn" onclick="goTo('riskmap')">להמשך: מפת סיכוני שינוי ←</button></div>
+  `;
+}
+
+/* =========================================================
+   SCREEN: RISK MAP
+   ========================================================= */
+function riskFor(pop){
+  const idx = pop.impact - (pop.readiness + pop.trust)/2;
+  if(idx >= 2.5) return {label:'סיכון גבוה', cls:'high'};
+  if(idx >= 0.5) return {label:'סיכון בינוני', cls:'med'};
+  return {label:'סיכון נמוך', cls:'low'};
+}
+
+function renderRiskMap(){
+  const rows = state.risk.map(pop=>{
+    const r = riskFor(pop);
+    return `<tr data-row-id="${pop.id}">
+      <td><input type="text" value="${pop.name}" data-risk-field="name" data-row-id="${pop.id}" placeholder="לדוגמה: מנהלי ביניים"></td>
+      <td><input type="range" min="1" max="5" value="${pop.impact}" data-risk-field="impact" data-row-id="${pop.id}"><span class="rangeval">${pop.impact}</span></td>
+      <td><input type="range" min="1" max="5" value="${pop.readiness}" data-risk-field="readiness" data-row-id="${pop.id}"><span class="rangeval">${pop.readiness}</span></td>
+      <td><input type="range" min="1" max="5" value="${pop.trust}" data-risk-field="trust" data-row-id="${pop.id}"><span class="rangeval">${pop.trust}</span></td>
+      <td><span class="risk-badge ${r.cls}">${r.label}</span></td>
+      <td><button class="del-row" data-del-id="${pop.id}" title="הסירו שורה">✕</button></td>
+    </tr>`;
+  }).join('');
+
+  return `
+    <div class="eyebrow">כלי עבודה #3</div>
+    <h2 class="title">מפת סיכוני השינוי הארגונית</h2>
+    <p class="subtitle">בחרו 3–5 אוכלוסיות מרכזיות בארגון ודרגו אותן: השפעת השינוי, רמת מוכנות ורמת אמון (1=נמוכה, 5=גבוהה). אוכלוסיות המאופיינות בהשפעה גבוהה, מוכנות נמוכה ואמון נמוך דורשות בדרך כלל תשומת לב מיידית.</p>
+
+    <div class="card" style="overflow-x:auto;">
+      <p style="color:var(--ink-soft); font-size:0.87rem; margin-bottom:14px;">💡 לחצו על הכפתור הכתום למטה כדי להוסיף שורה, תנו לאוכלוסייה שם, וגררו את שלושת המחוונים לפי מה שנכון אצלכם.</p>
+      <table class="risk-table">
+        <thead><tr><th>אוכלוסייה</th><th>השפעת השינוי</th><th>רמת מוכנות</th><th>רמת אמון</th><th>רמת סיכון</th><th></th></tr></thead>
+        <tbody>${rows || `<tr><td colspan="6" style="text-align:center; color:var(--ink-faint); padding:24px 0;">עוד לא נוספו אוכלוסיות.</td></tr>`}</tbody>
+      </table>
+      <button class="btn" style="margin-top:16px;" id="addPopBtn">+ הוסיפו אוכלוסייה</button>
+    </div>
+
+    <div class="card" style="margin-top:20px;">
+      <h4 style="font-size:1rem; margin-bottom:12px;">מה זה אומר בפועל?</h4>
+      <div class="risk-legend">
+        <div class="rl-row"><span class="risk-badge high">סיכון גבוה</span><span>השפעה גבוהה + מוכנות ואמון נמוכים. דורש תשומת לב מיידית: תקשורת ישירה מהמנהל, מעורבות מוקדמת בתהליך, ומענה על "מה זה אומר עבורי" לפני שהשמועות ממלאות את החלל.</span></div>
+        <div class="rl-row"><span class="risk-badge med">סיכון בינוני</span><span>יש עוד עבודה לעשות, אך לא באופן דחוף. כדאי לעקוב, לשתף מידע באופן שוטף ולחזק בהדרגה את המוכנות והאמון.</span></div>
+        <div class="rl-row"><span class="risk-badge low">סיכון נמוך</span><span>בסיס טוב להישען עליו. אפשר למנף את האוכלוסייה הזו כ"שגרירי שינוי" שמסייעים לקבוצות אחרות להסתגל.</span></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px;">
+      <h4 style="font-size:1rem; margin-bottom:10px;">תרגיל הנהלה</h4>
+      <p style="color:var(--ink-soft); font-size:0.9rem; margin-bottom:10px;">בחרו אוכלוסייה אחת הנמצאת ברמת הסיכון הגבוהה ביותר וענו:</p>
+      <ul style="padding-right:18px; color:var(--ink-soft); font-size:0.9rem; display:flex; flex-direction:column; gap:6px;">
+        <li>מה הם עלולים להפסיד כתוצאה מהשינוי?</li>
+        <li>מה הם עשויים להרוויח?</li>
+        <li>מה הם צריכים לשמוע מהמנהלים שלהם כבר עכשיו?</li>
+      </ul>
+    </div>
+
+    <div class="card open-questions" style="margin-top:24px;">
+      <h4 style="font-size:1.1rem; margin-bottom:14px;">שאלות אסטרטגיות לצוות HR</h4>
+      <ul>
+        <li>היכן צפויה ההתנגדות הגדולה ביותר?</li>
+        <li>אילו מנהלים זקוקים לתמיכה נוספת?</li>
+        <li>אילו אוכלוסיות נמצאות בסיכון לשחיקה?</li>
+        <li>האם אנו מודדים את רמת האמון בארגון?</li>
+        <li>כיצד נדע בעוד שישה חודשים שהשינוי באמת מצליח?</li>
+      </ul>
+    </div>
+
+    <div style="text-align:left; margin-top:20px;"><button class="btn" onclick="goTo('org')">להמשך: שאלון ארגוני ←</button></div>
+  `;
+}
+
+/* =========================================================
+   SCREEN: ORG QUESTIONNAIRE (4 LEVERS)
+   ========================================================= */
+function orgBand(total){
+  if(total>=48) return {label:'48–60 נקודות', text:'<strong>הארגון נמצא במצב טוב להתמודד עם שינוי מתמשך.</strong>'};
+  if(total>=36) return {label:'36–47 נקודות', text:'<strong>קיימים פערים שדורשים תשומת לב.</strong>'};
+  return {label:'מתחת ל-36 נקודות', text:'<strong>קיים סיכון משמעותי ליכולת ההסתגלות הארגונית.</strong>'};
+}
+
+function leverBand(total){
+  if(total>=12) return {label:'חוזקה', cls:'low', text:'נקודת חוזק אצלכם - אפשר לבנות עליה ולמנף אותה גם באזורים אחרים.'};
+  if(total>=8) return {label:'בפיתוח', cls:'med', text:'יש בסיס סביר, אך נדרש חיזוק ממוקד כדי שזה יהפוך לחוזקה אמיתית.'};
+  return {label:'צוואר בקבוק', cls:'high', text:'זהו כנראה אחד החסמים המרכזיים להצלחת השינוי אצלכם - כדאי להתחיל כאן.'};
+}
+
+function renderOrg(){
+  const blocks = LEVERS.map(lev=>{
+    const arr = state.org[lev.key];
+    const leverTotal = sum(arr);
+    const leverFilled = filledCount(arr)===3;
+    const items = lev.items.map((txt,i)=>`
+      <div class="q-item">
+        <div class="q-text">${txt}</div>
+        <div class="scale">
+          ${[1,2,3,4,5].map(v=>`<button data-org-lever="${lev.key}" data-idx="${i}" data-val="${v}" class="${arr[i]===v?'sel':''}">${v}</button>`).join('')}
+        </div>
+      </div>`).join('');
+    const verdict = leverFilled ? (()=>{ const lb = leverBand(leverTotal); return `<div class="lever-verdict"><span class="risk-badge ${lb.cls}">${lb.label}</span><span>${lb.text}</span></div>`; })() : '';
+    return `<div class="lever-block">
+      <div class="lever-title"><div class="icon">${lev.icon}</div><h4>${lev.title}</h4><div class="lever-score">${leverTotal}/15</div></div>
+      <div class="card">${items}</div>
+      ${verdict}
+    </div>`;
+  }).join('');
+
+  const allVals = [...state.org.leadership, ...state.org.culture, ...state.org.learning, ...state.org.trust];
+  const filled = filledCount(allVals);
+  const total = sum(allVals);
+
+  let panel = '';
+  if(filled===12){
+    const b = orgBand(total);
+    const leverTotals = LEVERS.map(lev=>({title:lev.title, total:sum(state.org[lev.key])}));
+    const best = leverTotals.reduce((a,b)=> b.total>a.total ? b : a);
+    const worst = leverTotals.reduce((a,b)=> b.total<a.total ? b : a);
+    panel = `<div class="score-panel">
+      ${compassHTML(total, 'מתוך 60', pct(total,60))}
+      <div class="txt"><div class="band">${b.label}</div><p>${b.text}</p></div>
+    </div>
+    ${best.title!==worst.title ? `<div class="card" style="margin-top:16px;">
+      <h4 style="font-size:0.98rem; margin-bottom:10px;">איפה כדאי להתחיל?</h4>
+      <div class="gaps-list">
+        <div class="gap-row strength"><span class="gap-score">${best.total}/15</span><span class="gap-txt"><strong>${best.title}</strong> - נקודת החוזק שלכם. אפשר למנף אותה כדי לתמוך במנופים אחרים.</span></div>
+        <div class="gap-row"><span class="gap-score">${worst.total}/15</span><span class="gap-txt"><strong>${worst.title}</strong> - כנראה צוואר הבקבוק המרכזי אצלכם כרגע. כדאי להתחיל כאן.</span></div>
+      </div>
+    </div>` : ''}`;
+  } else {
+    panel = `<div class="score-panel"><div class="txt"><p style="color:var(--ink-faint);">דרגו את כל 12 ההיגדים כדי לקבל תוצאה כוללת (${filled}/12 הושלמו).</p></div></div>`;
+  }
+
+  return `
+    <div class="eyebrow">כלי עבודה #4</div>
+    <h2 class="title">מדד המוכנות הארגונית לשינוי</h2>
+    <p class="subtitle"><strong>ארבעת המנופים של ארגון בעל יכולת שינוי גבוהה: מנהיגות, תרבות, למידה ואמון.</strong> דרגו כל סעיף בין 1 ל-5.</p>
+    ${blocks}
+    ${panel}
+    <div class="card" style="margin-top:24px;">
+      <h4 style="font-size:1rem; margin-bottom:8px;">תרגיל הנהלה</h4>
+      <p style="color:var(--ink-soft); font-size:0.9rem;">אם בעוד שנתיים 30%–40% מהעבודה בארגון שלכם תיראה אחרת — איזה מבין ארבעת המנופים (מנהיגות / תרבות / למידה / אמון) יהווה כיום את צוואר הבקבוק הגדול ביותר? ולמה?</p>
+    </div>
+    <div style="text-align:left; margin-top:20px;"><button class="btn" onclick="goTo('scorecard')">להמשך: Change Capability Scorecard ←</button></div>
+  `;
+}
+
+/* =========================================================
+   SCREEN: SCORECARD
+   ========================================================= */
+function scorecardBand(total){
+  if(total>=40) return {label:'40–50', text:'הארגון נמצא ברמת מוכנות גבוהה. <strong>קיימים יסודות חזקים להובלת שינוי מתמשך.</strong>'};
+  if(total>=30) return {label:'30–39', text:'<strong>קיימים יסודות טובים, אך ישנם מספר תחומים שדורשים חיזוק.</strong>'};
+  if(total>=20) return {label:'20–29', text:'<strong>השינוי צפוי לפגוש חסמים משמעותיים.</strong> מומלץ להתמקד במנהלים, אמון ותרבות למידה.'};
+  return {label:'מתחת ל-20', text:'<strong>הסיכון המרכזי אינו טכנולוגי. הוא ארגוני ואנושי.</strong>'};
+}
+
+function renderScorecard(){
+  const filled = filledCount(state.scorecard);
+  const total = sum(state.scorecard);
+  const items = SCORECARD_ITEMS.map((txt,i)=>`
+    <div class="q-item">
+      <div class="q-text">${txt}</div>
+      <div class="scale">
+        ${[1,2,3,4,5].map(v=>`<button data-group="scorecard" data-idx="${i}" data-val="${v}" class="${state.scorecard[i]===v?'sel':''}">${v}</button>`).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  let panel = '';
+  if(filled===10){
+    const b = scorecardBand(total);
+    const lows = lowestItems(SCORECARD_ITEMS, state.scorecard, 2);
+    const highs = highestItems(SCORECARD_ITEMS, state.scorecard, 4);
+    panel = `<div class="score-panel">
+      ${compassHTML(total, 'מתוך 50', pct(total,50))}
+      <div class="txt"><div class="band">${b.label}</div><p>${b.text}</p></div>
+    </div>
+    <div class="card" style="margin-top:16px;">
+      <h4 style="font-size:0.98rem; margin-bottom:4px;">הפערים הבולטים ביותר לפי התשובות שלכם</h4>
+      ${gapsListHTML(lows, 'לא זוהו פערים בולטים בפריטים הבודדים - אפשר להתמקד בחיזוק והעמקה של החוזקות הקיימות.', SCORECARD_TIPS)}
+    </div>
+    ${highs.length ? `<div class="card" style="margin-top:16px;">
+      <h4 style="font-size:0.98rem; margin-bottom:4px;">החוזקות הבולטות ביותר</h4>
+      ${strengthsListHTML(highs)}
+    </div>` : ''}`;
+  } else {
+    panel = `<div class="score-panel"><div class="txt"><p style="color:var(--ink-faint);">דרגו את כל 10 הסעיפים כדי לקבל את התוצאה (${filled}/10 הושלמו).</p></div></div>`;
+  }
+
+  return `
+    <div class="eyebrow">Change Capability Scorecard</div>
+    <h2 class="title">עד כמה הארגון שלכם מוכן לעידן של שינוי מתמשך?</h2>
+    <p class="subtitle">דרגו כל סעיף מ-1 עד 5.</p>
+    <div class="card">${items}</div>
+    ${panel}
+    <div class="quote-block" style="margin-top:26px;">אם הייתם יכולים לשפר רק סעיף אחד מתוך העשרה בשנה הקרובה – איזה סעיף היה מייצר את ההשפעה העסקית הגדולה ביותר?</div>
+    <div style="text-align:left; margin-top:20px;"><button class="btn" onclick="goTo('summary')">להמשך: סיכום ←</button></div>
+  `;
+}
+
+/* =========================================================
+   SCREEN: SUMMARY
+   ========================================================= */
+function renderSummary(){
+  function sumCard(title, sub, done, valueLabel, valueSub, pctVal){ return sumCardHTML(title, sub, done, valueLabel, valueSub, pctVal); }
+  const grid = dashboardGridHTML();
+
+  const finalQs = FINAL_QUESTIONS.map((q,i)=>`<div class="final-q"><div class="qn">${i+1}.</div><div>${q}</div></div>`).join('');
+
+  return `
+    <div class="eyebrow">סיכום</div>
+    <h2 class="title">האתגר הגדול אינו ה-AI — הוא היכולת להשתנות</h2>
+    <p class="subtitle">רוב הארגונים יצליחו לרכוש את הכלים הנכונים ולהטמיע מערכות חדשות. ההבדל האמיתי לא ייווצר בטכנולוגיה — הוא ייווצר ביכולת של אנשים, מנהלים וארגונים ללמוד, להסתגל ולהשתנות מהר יותר מהסביבה.</p>
+
+    <h3 style="font-size:1.15rem; margin-bottom:14px;">תמונת מצב: התוצאות שלכם</h3>
+    ${grid}
+
+    <h3 style="font-size:1.15rem; margin:36px 0 14px;">4 שאלות שכדאי לקחת לישיבת ההנהלה הבאה</h3>
+    ${finalQs}
+
+    <div class="quote-block" style="margin-top:30px;">
+      העתיד לא שייך לארגונים שיודעים הכי הרבה. הוא שייך לארגונים שמסוגלים ללמוד, להסתגל ולהשתנות מהר יותר מכולם.
+      <cite>— ארז אלמוגי, CEO, Blanchard Israel</cite>
+    </div>
+
+    <div class="card" style="margin-top:26px; display:flex; align-items:center; gap:20px; flex-wrap:wrap;">
+      <div style="flex:1; min-width:220px;">
+        <h4 style="font-size:1.05rem; margin-bottom:6px;">רוצים להמשיך את השיחה?</h4>
+        <p style="color:var(--ink-soft); font-size:0.9rem;">קראו על הניסיון של Blanchard בליווי ארגונים בעידן ה-AI, ואיך אפשר לקחת את זה צעד קדימה.</p>
+      </div>
+      <button class="btn alt" onclick="goTo('about')" style="flex:0 0 auto;">אודות Blanchard ←</button>
+    </div>
+
+    <div class="no-print" style="text-align:left; margin-top:26px;">
+      <button class="btn ghost" onclick="window.print()">🖨 הדפיסו / שמרו כ-PDF</button>
+    </div>
+
+    <footer class="credit">כלי זה נבנה על בסיס "הובלת אנשים וארגונים בעידן ה-AI" — מדריך עבודה למנהלי HR, L&amp;D והנהלות בכירות · ארז אלמוגי, CEO, Blanchard Israel<br>© כל הזכויות שמורות Blanchard Israel LTD</footer>
+  `;
+}
+
+/* =========================================================
+   SCREEN: ABOUT BLANCHARD
+   ========================================================= */
+function renderAbout(){
+  const solutions = ABOUT_SOLUTIONS.map(s=>`
+    <div class="mini-card" style="min-height:auto;">
+      <h4 style="font-size:1rem; margin-bottom:6px;">${s.title}</h4>
+      <p>${s.body}</p>
+    </div>
+  `).join('');
+
+  const clients = ABOUT_CLIENTS.map(c=>`<span class="client-chip">${c}</span>`).join('');
+
+  const mailto = `mailto:${ABOUT_EMAIL}?subject=${ABOUT_SUBJECT}&body=${ABOUT_BODY}`;
+
+  return `
+    <div class="eyebrow">משינוי ליכולת ארגונית</div>
+    <h2 class="title">אודות Blanchard</h2>
+    <p class="subtitle">לאורך הערכה הזו עסקנו בשאלה אחת מרכזית: כיצד בונים ארגון שמסוגל ללמוד, להסתגל ולהשתנות שוב ושוב? זו בדיוק השאלה שמעסיקה היום הנהלות, מנהלי HR ו-L&amp;D בארגונים מובילים בארץ ובעולם.</p>
+
+    <div class="card">
+      <p style="color:var(--ink-soft); font-size:0.95rem;">ב-Blanchard אנחנו מלווים ארגונים כבר למעלה מ-45 שנה בפיתוח מנהיגות, מנהלים וצוותים בעלי ביצועים גבוהים. בשנים האחרונות, עם העלייה בקצב השינויים שמייצר ה-AI, אנו רואים יותר ויותר ארגונים המבינים שההשקעה בטכנולוגיה לבדה אינה מספיקה. <strong>היתרון התחרותי עובר ליכולת של המנהלים והעובדים להוביל שינוי, ללמוד במהירות, להסתגל למציאות חדשה ולשמור על ביצועים גם בתקופות של אי־ודאות.</strong></p>
+      <p style="color:var(--ink-soft); font-size:0.95rem; margin-top:14px;">לכן הרחבנו את מסעות הלמידה שלנו כך שיתנו מענה לא רק לפיתוח מיומנויות ניהול, אלא גם לבניית Change Capability – היכולת הארגונית להתמודד עם שינוי מתמשך.</p>
+    </div>
+
+    <h3 style="margin:36px 0 6px; font-size:1.25rem;">כיצד אנו מסייעים לארגונים?</h3>
+    <p class="subtitle">אנחנו משלבים פתרונות משלימים, הניתנים להתאמה לצרכים ולשלב שבו נמצא כל ארגון:</p>
+    <div class="grid-4">${solutions}</div>
+
+    <div class="card" style="margin-top:10px; display:flex; align-items:center; gap:24px; flex-wrap:wrap;">
+      <div class="compass small">
+        <div class="orbit"></div>
+        <div class="ring" style="--pct:100; --gauge-color:var(--brass);"></div>
+        <div class="needle-core"><b>70+</b><span>מדינות</span></div>
+      </div>
+      <div style="flex:1; min-width:240px;">
+        <h4 style="font-size:1.05rem; margin-bottom:6px;">ניסיון גלובלי. התאמה מקומית.</h4>
+        <p style="color:var(--ink-soft); font-size:0.9rem;">Blanchard פועלת ביותר מ-70 מדינות באמצעות רשת של שותפים ויועצים מקומיים, ומלווה ארגונים מובילים במגוון רחב של תעשיות - טכנולוגיה, אנרגיה, פארמה, שירותים פיננסיים, תעשייה, לוגיסטיקה, קמעונאות ועוד. בישראל אנו מלווים ארגונים מקומיים וגלובליים במסעות למידה המשלבים סדנאות, למידה דיגיטלית, אימון, למידת עמיתים והטמעה לאורך זמן - מתוך תפיסה של שינוי התנהגותי ולא רק העברת ידע.</p>
+      </div>
+    </div>
+
+    <h3 style="margin:36px 0 14px; font-size:1.25rem;">כמה מהארגונים שבחרו לעבוד איתנו</h3>
+    <div class="card"><div class="client-list">${clients}</div></div>
+
+    <div class="quote-block" style="margin-top:30px;">
+      הטכנולוגיה תמשיך להשתנות. גם האתגרים. גם התפקידים. השאלה היא האם הארגון שלכם מפתח במקביל גם את היכולת של האנשים שלו להשתנות - זו הופכת להיות אחת מיכולות הליבה של ארגונים מצליחים.
+    </div>
+
+    <div class="card cta-card" style="margin-top:30px;">
+      <h4 style="font-size:1.2rem; margin-bottom:8px;">אם תרצו להמשיך את השיחה</h4>
+      <p style="color:var(--ink-soft); font-size:0.95rem; margin-bottom:18px;">אם הערכה הזו העלתה אצלכם שאלות, מחשבות או אתגרים הרלוונטיים לארגון שלכם, נשמח לקיים שיחת חשיבה קצרה. במהלך השיחה נוכל לבחון יחד את רמת המוכנות של הארגון, לשתף בניסיון שנצבר בארגונים בישראל ובעולם, ולחשוב יחד מהם הצעדים המתאימים ביותר עבורכם.</p>
+      <p style="color:var(--ink-faint); font-size:0.82rem; margin-bottom:18px;">ללא עלות. ללא התחייבות. פשוט שיחה מקצועית.</p>
+      <a href="${mailto}" class="btn alt">קבעו שיחה עם הצוות שלנו ←</a>
+    </div>
+
+    <footer class="credit">© כל הזכויות שמורות Blanchard Israel LTD</footer>
+  `;
+}
+
+/* =========================================================
+   EVENT HANDLERS
+   ========================================================= */
+function attachHandlers(){
+  // simple rating scales (manager / scorecard)
+  document.querySelectorAll('.scale button[data-group]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const group = btn.dataset.group;
+      const idx = parseInt(btn.dataset.idx);
+      const val = parseInt(btn.dataset.val);
+      const arr = group==='manager' ? state.manager : state.scorecard;
+      arr[idx] = (arr[idx]===val) ? null : val; // click again to unselect
+      renderMain();
+    });
+  });
+
+  // org lever scales
+  document.querySelectorAll('.scale button[data-org-lever]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const lever = btn.dataset.orgLever;
+      const idx = parseInt(btn.dataset.idx);
+      const val = parseInt(btn.dataset.val);
+      const arr = state.org[lever];
+      arr[idx] = (arr[idx]===val) ? null : val;
+      renderMain();
+    });
+  });
+
+  // warning checklist
+  document.querySelectorAll('.chk-item[data-warn-idx]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      const idx = parseInt(el.dataset.warnIdx);
+      state.warnings[idx] = !state.warnings[idx];
+      renderMain();
+    });
+  });
+
+  // risk map: add row
+  const addBtn = document.getElementById('addPopBtn');
+  if(addBtn){
+    addBtn.addEventListener('click', ()=>{
+      state.riskIdSeed += 1;
+      state.risk.push({ id: state.riskIdSeed, name:'', impact:3, readiness:3, trust:3 });
+      renderMain();
+    });
+  }
+
+  // risk map: field changes
+  document.querySelectorAll('[data-risk-field]').forEach(el=>{
+    el.addEventListener('input', ()=>{
+      const id = parseInt(el.dataset.rowId);
+      const field = el.dataset.riskField;
+      const row = state.risk.find(r=>r.id===id);
+      if(!row) return;
+      if(field==='name'){ row.name = el.value; }
+      else { row[field] = parseInt(el.value); }
+      // live-update the adjacent value label + badge without full rerender for smoother sliders
+      if(field!=='name'){
+        const span = el.parentElement.querySelector('.rangeval');
+        if(span) span.textContent = el.value;
+        const tr = el.closest('tr');
+        const r = riskFor(row);
+        const badge = tr.querySelector('.risk-badge');
+        badge.className = `risk-badge ${r.cls}`;
+        badge.textContent = r.label;
+      }
+    });
+  });
+
+  // risk map: delete row
+  document.querySelectorAll('[data-del-id]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const id = parseInt(btn.dataset.delId);
+      state.risk = state.risk.filter(r=>r.id!==id);
+      renderMain();
+    });
+  });
+}
+
+/* =========================================================
+   INIT
+   ========================================================= */
+renderNav();
+renderMain();
+</script>
+</body>
+</html>
